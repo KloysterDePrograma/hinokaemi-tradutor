@@ -349,16 +349,51 @@
             return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         }
 
-        // Cosmofrequência
-        const latinToCosmo = {
+        // --- Cosmofrequência (Lógica fornecida pelo usuário) ---
+        
+        // minúsculas
+        const cosmoLowerMap = {
             'a':'b','b':'c','c':'d','d':'e','e':'f','f':'g','g':'h','h':'i','i':'q',
             'j':'r','k':'s','l':'t','m':'u','n':'v','o':'w','p':'x','q':'▀','r':'·',
-            's':'╚','t':'Ё','u':'╢','v':'╣','w':'╤','x':'╥','y':'╦','z':'╧',
-            'A':'а','B':'б','C':'ц','D':'д','E':'е','F':'ф','G':'г','H':'х','I':'и',
-            'J':'я','K':'р','L':'с','M':'т','N':'у','O':'ж','P':'в','Q':'ь','R':'ы',
-            'S':'Б','T':'Ц','U':'Д','V':'Е','W':'Ф','X':'Г','Y':'Х','Z':'И',
-            '?':'o','!':'Z','.' :'K',',' :'k'
+            's':'╚','t':'Ё','u':'╢','v':'╣','w':'╤','x':'╥','y':'╦','z':'╧'
         };
+        
+        // maiúsculas
+        const cosmoUpperMap = {
+            'A':'а','B':'б','C':'ц','D':'д','E':'е','F':'ф','G':'г','H':'х','I':'и',
+            'J':'я','K':'р','L':'с','M':'т','N':'у','O':'ж','P':'в','Q':'ь','R':'ы','S':'Б',
+            'T':'Ц','U':'Д','V':'E','W':'Ф','X':'Г','Y':'Х','Z':'И'
+        };
+        
+        // pontuação
+        const cosmoPunctMap = {
+            '?':'o','!':'Z','.':'K',',':'k'
+        };
+        
+        // Mapa de tradução direta (PT -> Cosmo)
+        const cosmoForwardMap = {...cosmoLowerMap, ...cosmoUpperMap, ...cosmoPunctMap};
+        
+        // Mapa de tradução reversa (Cosmo -> PT)
+        const cosmoReverseMap = {};
+        for(const [k,v] of Object.entries(cosmoForwardMap)){
+            cosmoReverseMap[v] = k;
+        }
+        
+        // A função de tradução da Cosmofrequência é simples (caractere por caractere)
+        function traduzirCosmo(texto, mapa){
+            let out = '';
+            for(const ch of texto){
+                if(ch in mapa){
+                    out += mapa[ch];
+                } else {
+                    out += ch;
+                }
+            }
+            return out;
+        }
+        // --- Fim da Lógica Cosmofrequência ---
+        
+        // Hinokæmi com acentos (para tradução PT → Hinokæmi)
 
         // Hinokæmi com acentos (para tradução PT → Hinokæmi)
         const latinToHino = {
@@ -398,7 +433,6 @@
             return inv;
         }
 
-        const cosmoToLatin = inverterMapa(latinToCosmo);
         // O mapa reverso agora inclui as versões capitalizadas dos símbolos Hinokæmi sem acentos
         const hinoToLatin = criarMapaReversoComCapitalizacao(latinToHino);
 
@@ -408,9 +442,17 @@
             const saida = document.getElementById('saida');
 
             if (modo === 'cosmofrequencia') {
-                texto = limparAcentosEAE(texto);
-                const mapa = direcao === 'paraLinguagem' ? latinToCosmo : cosmoToLatin;
-                saida.value = aplicarMapaAvancado(texto, mapa);
+                // Cosmofrequência: Limpa acentos na entrada, usa a lógica simples de tradução
+                // A remoção de acentos deve ser aplicada APENAS se a tradução for de PT -> Lang
+                
+                if (direcao === 'paraLinguagem') {
+                    // PT -> Cosmo: Limpa acentos na entrada e usa o mapa direto
+                    texto = limparAcentosEAE(texto);
+                    saida.value = traduzirCosmo(texto, cosmoForwardMap);
+                } else {
+                    // Cosmo -> PT: Não limpa acentos na entrada, usa o mapa reverso
+                    saida.value = traduzirCosmo(texto, cosmoReverseMap);
+                }
             } else {
                 // Hinokæmi
                 if (direcao === 'paraLinguagem') {
@@ -442,13 +484,32 @@
             return resultado;
         }
 
+        // Função avançada para Hinokæmi (substituição de múltiplos caracteres)
         function aplicarMapaAvancado(texto, mapa){
-            let out = texto;
+            let out = '';
             // Ordenar por tamanho decrescente para garantir que símbolos mais longos sejam substituídos primeiro
             const ordenado = Object.entries(mapa).sort((a,b)=>b[0].length - a[0].length);
-            for (const [orig, dest] of ordenado){
-                out = out.replace(new RegExp(escapeRegex(orig),'g'), dest);
+            
+            // Cria um mapa de substituição para regex
+            const regexMap = {};
+            for (const [orig, dest] of ordenado) {
+                regexMap[escapeRegex(orig)] = dest;
             }
+
+            // Expressão regular para encontrar todas as chaves do mapa
+            const regex = new RegExp(Object.keys(regexMap).join('|'), 'g');
+
+            out = texto.replace(regex, (matched) => {
+                // Encontra a substituição no mapa
+                const dest = regexMap[escapeRegex(matched)];
+                
+                // Se a chave original era capitalizada, capitaliza o resultado
+                if (matched === matched.toUpperCase() && matched.match(/[a-zA-Z]/)) {
+                    return dest.charAt(0).toUpperCase() + dest.slice(1);
+                }
+                return dest;
+            });
+
             return out;
         }
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tradutor Hinokæmi Antigo</title>
+<title>Tradutor Hinokæmi — Novo Alfabeto</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&display=swap');
 
@@ -70,66 +70,69 @@
     color: #a38c61;
     text-shadow: 1px 1px 3px #000;
   }
+
+  .note {
+    color: #d4b56a;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+  }
 </style>
 </head>
 <body>
 
-<h1>Tradutor Hinokæmi Antigo</h1>
+<h1>Tradutor Hinokæmi — Novo Alfabeto</h1>
 
-<textarea id="entrada" placeholder="Digite seu texto em Português ou Hinokæmi..."></textarea><br>
+<div class="note">Agora com o alfabeto corrigido e reversão automática</div>
+
+<textarea id="entrada" placeholder="Digite o texto em Português ou Hinokæmi..."></textarea><br>
 
 <button onclick="traduzir('paraHinokaemi')">Português → Hinokæmi</button>
 <button onclick="traduzir('paraPortugues')">Hinokæmi → Português</button>
+<button onclick="limpar()">Limpar</button>
 
 <textarea id="saida" readonly placeholder="A tradução aparecerá aqui..."></textarea>
 
-<footer>⟡ Língua Hinokæmi restaurada por curiosos do impossível ⟡</footer>
+<footer>⟡ Hinokæmi restaurado — versão sem duplicatas ⟡</footer>
 
 <script>
 const latinToHinokaemi = {
-  'A': 'Arr', 'B': 'Bor', 'C': 'Con', 'D': 'Dem', 'E': 'Er',
-  'F': 'Fehr', 'G': 'Gim', 'H': 'Hur', 'I': 'Isyr', 'J': 'Jer',
-  'K': 'Kir', 'L': 'Ellew', 'M': 'Mer', 'N': 'Nyet', 'O': 'Om',
-  'P': 'Pyun', 'Q': 'Qet', 'R': 'Rer', 'S': 'Sat', 'T': 'Tær',
-  'U': 'Urr', 'V': 'Vix', 'W': 'Wyg', 'X': 'Xur', 'Y': 'Ygg', 'Z': 'Zir'
+  // Minúsculas
+  'a':'b','b':'c','c':'d','d':'e','e':'f','f':'g','g':'h','h':'i','i':'q',
+  'j':'r','k':'s','l':'t','m':'u','n':'v','o':'w','p':'x','q':'▀','r':'·',
+  's':'╚','t':'Ё','u':'╢','v':'╣','w':'╤','x':'╥','y':'╦','z':'╧',
+  // Maiúsculas
+  'A':'а','B':'б','C':'ц','D':'д','E':'е','F':'ф','G':'г','H':'х','I':'и',
+  'J':'я','K':'р','L':'с','M':'т','N':'у','O':'ж','P':'в','Q':'ь','R':'ы',
+  'S':'Б','T':'Ц','U':'Д','V':'Е','W':'Ф','X':'Г','Y':'Х','Z':'И',
+  // Pontuação
+  '?':'o','!':'Z','.' :'K',',' :'k'
 };
 
-const hinokaemiToLatin = Object.fromEntries(
-  Object.entries(latinToHinokaemi).map(([k, v]) => [v, k])
-);
-
-function portuguesParaHinokaemi(texto) {
-  let resultado = "";
-  for (let letra of texto) {
-    const maiuscula = letra === letra.toUpperCase();
-    const base = letra.toUpperCase();
-    if (latinToHinokaemi[base]) {
-      let trad = latinToHinokaemi[base];
-      if (!maiuscula) trad = trad.charAt(0).toLowerCase() + trad.slice(1);
-      resultado += trad;
-    } else resultado += letra;
-  }
-  return resultado;
-}
-
-function hinokaemiParaPortugues(texto) {
-  let resultado = texto;
-  const ordenado = Object.entries(hinokaemiToLatin).sort((a, b) => b[0].length - a[0].length);
-  for (const [hinok, letra] of ordenado) {
-    const regexMaius = new RegExp(hinok, "g");
-    const regexMinus = new RegExp(hinok.toLowerCase(), "g");
-    resultado = resultado.replace(regexMaius, letra);
-    resultado = resultado.replace(regexMinus, letra.toLowerCase());
-  }
-  return resultado;
+// Cria dicionário reverso automaticamente
+const hinokaemiToLatin = {};
+for (const [lat, hin] of Object.entries(latinToHinokaemi)) {
+  if (!(hin in hinokaemiToLatin)) hinokaemiToLatin[hin] = lat;
 }
 
 function traduzir(direcao) {
-  const entrada = document.getElementById('entrada').value;
-  const saida = document.getElementById('saida');
-  saida.value = direcao === 'paraHinokaemi'
-    ? portuguesParaHinokaemi(entrada)
-    : hinokaemiParaPortugues(entrada);
+  const entrada = document.getElementById("entrada").value;
+  const saida = document.getElementById("saida");
+  saida.value = direcao === "paraHinokaemi"
+    ? aplicarMapa(entrada, latinToHinokaemi)
+    : aplicarMapa(entrada, hinokaemiToLatin);
+}
+
+function aplicarMapa(texto, mapa) {
+  let resultado = "";
+  for (let ch of texto) {
+    resultado += mapa[ch] || ch;
+  }
+  return resultado;
+}
+
+function limpar() {
+  document.getElementById("entrada").value = "";
+  document.getElementById("saida").value = "";
 }
 </script>
 
